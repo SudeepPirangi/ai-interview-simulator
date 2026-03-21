@@ -1,12 +1,18 @@
-from fastapi import FastAPI, HTTPException
+import shutil
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 
 from app.core.rate_limiter import is_allowed
-from app.service import generate_response
+from app.services.llm_service import generate_response
+from app.services.resume_service import extract_text_from_pdf
 from app.types import PromptRequest
-from app.utils import read_html_file
+from app.utils.file_parser import read_html_file
+from app.utils.text_cleaner import clean_text
 
 app = FastAPI()
+
+MAX_CHARS = 5000
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -42,3 +48,16 @@ async def ask(request: PromptRequest):
         }
     finally:
         print("\nLLM Call Complete", end="\n\n")
+
+
+@app.post("/upload-resume")
+async def upload_resume(file: UploadFile = File(...)):
+    file_path = f"temp_{file.filename}"
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    text = extract_text_from_pdf(file_path)
+    cleaned_text = clean_text(text)
+
+    return {"text_preview": cleaned_text[:MAX_CHARS]}
