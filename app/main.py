@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
+from app.core.cache import get_cache_key, get_from_cache, set_cache
 from app.core.retry import call_with_retry
 from app.llm.gemini_provider import GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
@@ -30,13 +31,25 @@ async def ask(request: PromptRequest):
 
         start = time.time()
 
-        response = call_with_retry(
-            lambda: provider.generate(system_prompt, user_prompt)
-        )
+        key = get_cache_key(system_prompt, user_prompt)
+
+        # Check cache first
+        cached = get_from_cache(key)
+        if cached:
+            # If cached → cached response
+            response = cached
+        else:
+            # If not cached → call LLM
+            response = call_with_retry(
+                lambda: provider.generate(system_prompt, user_prompt)
+            )
 
         end = time.time()
         latency = end - start
         print(f"[Latency] {latency:.2f} seconds")
+
+        # Store in cache
+        set_cache(key, response)
 
         return {
             "success": True,
