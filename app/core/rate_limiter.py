@@ -1,10 +1,9 @@
 from time import time
 
+from app.config import RATE_LIMIT, WINDOW_SIZE
+
 # user_id → list of timestamps
 user_requests = {}
-
-RATE_LIMIT = 5  # max requests
-WINDOW_SIZE = 60  # seconds
 
 
 def is_allowed(user_id: str) -> bool:

@@ -3,7 +3,9 @@ import shutil
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 
+from app.config import MAX_CHARS, OPEN_AI
 from app.core.rate_limiter import is_allowed
+from app.services.extraction_service import extract_skills
 from app.services.llm_service import generate_response
 from app.services.resume_service import extract_text_from_pdf
 from app.types import PromptRequest
@@ -11,8 +13,6 @@ from app.utils.file_parser import read_html_file
 from app.utils.text_cleaner import clean_text
 
 app = FastAPI()
-
-MAX_CHARS = 5000
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -60,4 +60,6 @@ async def upload_resume(file: UploadFile = File(...)):
     text = extract_text_from_pdf(file_path)
     cleaned_text = clean_text(text)
 
-    return {"text_preview": cleaned_text[:MAX_CHARS]}
+    extracted_skills = extract_skills(resume_text=cleaned_text)
+
+    return extracted_skills

@@ -1,5 +1,6 @@
 import time
 
+from app.config import OPEN_AI
 from app.core.cache import get_cache_key, get_from_cache, set_cache
 from app.core.retry import call_with_retry
 from app.llm.gemini_provider import GeminiProvider
@@ -8,7 +9,7 @@ from app.types import PromptRequest
 
 
 def generate_response(request: PromptRequest, system_prompt: str, user_prompt: str):
-    if request.provider == "openai":
+    if request.provider == OPEN_AI:
         provider = OpenAIProvider()
     else:
         provider = GeminiProvider()

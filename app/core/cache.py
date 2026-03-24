@@ -5,9 +5,9 @@ This needs to be updated later with production grade caching.
 
 import time
 
-cache_store = {}
+from app.config import CACHE_TTL
 
-CACHE_TTL = 300  # 5 minutes
+cache_store = {}
 
 
 def get_cache_key(system_prompt: str, user_prompt: str) -> str:

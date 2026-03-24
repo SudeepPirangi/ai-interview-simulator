@@ -1,8 +1,10 @@
 import random
 import time
 
+from app.config import MAX_RETRIES
 
-def call_with_retry(func, max_retries=3):
+
+def call_with_retry(func, max_retries=MAX_RETRIES):
     for attempt in range(max_retries):
         try:
             return func()
