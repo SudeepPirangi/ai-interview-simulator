@@ -16,6 +16,11 @@ CLAUDE = "claude"
 MAX_CHARS = 5000
 MAX_RETRIES = 3
 
+# Long resumes: split into overlapping windows for map (per-chunk LLM) + reduce (merge).
+# Tune CHUNK_SIZE to stay under your model context budget minus prompt overhead.
+CHUNK_SIZE = 3500
+CHUNK_OVERLAP = 400
+
 # caching
 CACHE_TTL = 300  # 5 minutes
 

@@ -16,7 +16,8 @@ def generate_response(request: PromptRequest, system_prompt: str, user_prompt: s
 
     start = time.time()
 
-    key = get_cache_key(system_prompt, user_prompt)
+    json_mode = getattr(request, "json_mode", False)
+    key = get_cache_key(system_prompt, user_prompt, json_mode=json_mode)
 
     # Check cache first
     cached = get_from_cache(key)
@@ -26,7 +27,7 @@ def generate_response(request: PromptRequest, system_prompt: str, user_prompt: s
     else:
         # If not cached → call LLM
         response = call_with_retry(
-            lambda: provider.generate(system_prompt, user_prompt)
+            lambda: provider.generate(system_prompt, user_prompt, json_mode=json_mode)
         )
 
     end = time.time()

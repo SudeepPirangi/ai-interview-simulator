@@ -1,5 +1,9 @@
 # 🧠 AI Engineering Journey Logbook
 
+## Initial Prompt
+
+You are an AI engineering expert and trainer. Help me with suggestions and guidance on learning AI Engineering concepts and code snippets. to give my background, I am a react + node.js developer for 10 years and trying to transform to an AI Engineer role, learn how to build Agentic AI solutions, deploy and monitor them. Build a real world solution using Python and use that project to showcase my ability in my profile for job interviews. For this, you should be my guide and mentor through out
+
 ## 👤 Background
 
 * 10 years experience in React + Node.js

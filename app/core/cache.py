@@ -10,8 +10,9 @@ from app.config import CACHE_TTL
 cache_store = {}
 
 
-def get_cache_key(system_prompt: str, user_prompt: str) -> str:
-    return f"{system_prompt}:{user_prompt}"
+def get_cache_key(system_prompt: str, user_prompt: str, json_mode: bool = False) -> str:
+    suffix = "|json=1" if json_mode else ""
+    return f"{system_prompt}:{user_prompt}{suffix}"
 
 
 def get_from_cache(key: str):

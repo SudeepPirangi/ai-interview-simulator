@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.config import CLAUDE, GEMINI, OPEN_AI
 
@@ -21,7 +21,18 @@ class PromptRequest(BaseModel):
     provider: Literal[OPEN_AI, GEMINI, CLAUDE]
 
 
+class ResumeSkills(BaseModel):
+    """Structured skill buckets returned by /upload-resume and used after merge."""
+
+    languages: list[str] = Field(default_factory=list)
+    frameworks: list[str] = Field(default_factory=list)
+    databases: list[str] = Field(default_factory=list)
+    cloud: list[str] = Field(default_factory=list)
+    devops: list[str] = Field(default_factory=list)
+
+
 class CustomPromptRequest:
-    def __init__(self, prompt="", provider=OPEN_AI):
+    def __init__(self, prompt="", provider=OPEN_AI, json_mode: bool = False):
         self.prompt = prompt
         self.provider = provider
+        self.json_mode = json_mode

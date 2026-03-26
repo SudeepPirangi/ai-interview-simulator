@@ -1,10 +1,11 @@
+import os
 import shutil
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 
-from app.config import MAX_CHARS, OPEN_AI
 from app.core.rate_limiter import is_allowed
+from app.exceptions import SkillsParsingError
 from app.services.extraction_service import extract_skills
 from app.services.llm_service import generate_response
 from app.services.resume_service import extract_text_from_pdf
@@ -54,12 +55,20 @@ async def ask(request: PromptRequest):
 async def upload_resume(file: UploadFile = File(...)):
     file_path = f"temp_{file.filename}"
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    text = extract_text_from_pdf(file_path)
-    cleaned_text = clean_text(text)
+        text = extract_text_from_pdf(file_path)
+        cleaned_text = clean_text(text)
 
-    extracted_skills = extract_skills(resume_text=cleaned_text)
-
-    return extracted_skills
+        try:
+            return extract_skills(resume_text=cleaned_text)
+        except SkillsParsingError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail="Extraction failed: model output was not valid structured skills.",
+            ) from exc
+    finally:
+        if os.path.isfile(file_path):
+            os.remove(file_path)
