@@ -1,11 +1,16 @@
+import logging
 import os
 import shutil
+import uuid
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 
 from app.core.rate_limiter import is_allowed
+from app.core.redis_client import get_redis
 from app.exceptions import SkillsParsingError
+from app.observability.context import request_id_var
+from app.observability.log import log_event
 from app.services.extraction_service import extract_skills
 from app.services.llm_service import generate_response
 from app.services.resume_service import extract_text_from_pdf
@@ -13,7 +18,40 @@ from app.types import PromptRequest
 from app.utils.file_parser import read_html_file
 from app.utils.text_cleaner import clean_text
 
-app = FastAPI()
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+app = FastAPI(title="AI Interview Simulator")
+
+
+@app.get("/health")
+async def health():
+    payload = {"status": "ok", "redis": "disabled"}
+    r = get_redis()
+    if r:
+        try:
+            r.ping()
+            payload["redis"] = "ok"
+        except Exception as exc:
+            payload["status"] = "degraded"
+            payload["redis"] = "error"
+            payload["redis_error"] = type(exc).__name__
+    return payload
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    token = request_id_var.set(str(uuid.uuid4()))
+    try:
+        response = await call_next(request)
+        log_event(
+            "http_request",
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+        )
+        return response
+    finally:
+        request_id_var.reset(token)
 
 
 @app.get("/", response_class=HTMLResponse)
