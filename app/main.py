@@ -12,9 +12,10 @@ from app.exceptions import SkillsParsingError
 from app.observability.context import request_id_var
 from app.observability.log import log_event
 from app.services.extraction_service import extract_skills
+from app.services.interview_session_service import get_session, process_turn, start_session
 from app.services.llm_service import generate_response
 from app.services.resume_service import extract_text_from_pdf
-from app.types import PromptRequest
+from app.types import PromptRequest, SessionStartRequest, SessionTurnRequest
 from app.utils.file_parser import read_html_file
 from app.utils.text_cleaner import clean_text
 
@@ -110,3 +111,66 @@ async def upload_resume(file: UploadFile = File(...)):
     finally:
         if os.path.isfile(file_path):
             os.remove(file_path)
+
+
+@app.post("/session/start")
+async def session_start(body: SessionStartRequest):
+    user_id = "default_user"
+    if not is_allowed(user_id):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    session = start_session(
+        goal=body.goal,
+        resume_skills=body.resume_skills,
+        provider=body.provider,
+        max_turns=body.max_turns,
+    )
+    return {
+        "session_id": session.session_id,
+        "question": session.current_question,
+        "turn": session.turn_count + 1,
+        "max_turns": session.max_turns,
+        "status": session.status,
+    }
+
+
+@app.post("/session/turn")
+async def session_turn(body: SessionTurnRequest):
+    user_id = "default_user"
+    if not is_allowed(user_id):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    try:
+        session = process_turn(body.session_id, body.answer)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Session not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "session_id": session.session_id,
+        "evaluation": session.last_evaluation,
+        "question": session.current_question,
+        "turn": session.turn_count,
+        "max_turns": session.max_turns,
+        "done": session.status == "completed",
+        "summary": session.summary,
+        "status": session.status,
+    }
+
+
+@app.get("/session/{session_id}")
+async def session_get(session_id: str):
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {
+        "session_id": session.session_id,
+        "goal": session.goal,
+        "turn": session.turn_count,
+        "max_turns": session.max_turns,
+        "status": session.status,
+        "current_question": session.current_question,
+        "messages": session.messages,
+        "summary": session.summary,
+    }

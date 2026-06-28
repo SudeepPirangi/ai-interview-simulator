@@ -39,3 +39,13 @@ Logs are **one JSON object stderr**.
 - `llm_cache_hit` / `llm_cache_miss` / `llm_call_complete` — provider, optional `json_mode`, `latency_sec`.
 
 Point your log collector at process output or wrap Uvicorn with your preferred formatter.
+
+## Interview sessions (Step 5)
+
+Multi-turn flow using tool-style LLM calls (`get_next_question`, `evaluate_answer`, `summarize_weak_areas`):
+
+1. `POST /session/start` — body: `{ "goal": "...", "resume_skills": { ... }, "provider": "openai", "max_turns": 5 }`
+2. `POST /session/turn` — body: `{ "session_id": "...", "answer": "..." }` → returns feedback + next question (or `summary` when done)
+3. `GET /session/{session_id}` — inspect conversation state
+
+Sessions are stored in memory (single process); restart clears them.

@@ -36,3 +36,15 @@ class CustomPromptRequest:
         self.prompt = prompt
         self.provider = provider
         self.json_mode = json_mode
+
+
+class SessionStartRequest(BaseModel):
+    goal: str = "30-minute senior backend technical screen"
+    resume_skills: ResumeSkills | None = None
+    provider: Literal[OPEN_AI, GEMINI, CLAUDE] = OPEN_AI
+    max_turns: int = Field(default=5, ge=1, le=20)
+
+
+class SessionTurnRequest(BaseModel):
+    session_id: str
+    answer: str = Field(min_length=1)
